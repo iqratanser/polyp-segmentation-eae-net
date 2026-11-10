@@ -1,4 +1,4 @@
-# EAE-Net: Polyp Segmentation
+# EAE-Net: Polyp Segmentation on Kvasir-SEG
 
 Automatic polyp segmentation in colonoscopy images using a U-Net with an
 EfficientNet-B3 encoder and scSE attention. This repository contains the code
@@ -7,18 +7,18 @@ from my MS thesis in Information Technology at the University of Sargodha.
 Finding polyps early is important for colorectal cancer screening, and
 outlining them automatically can help doctors during colonoscopy.
 
-This repository has two versions of the model: an edge-free version and an
-edge-aware version.
+## Models
 
-## Model
+Both notebooks use the same network, data, loss and settings. The only
+difference is the edge branch.
 
-| Part | Details |
-|------|---------|
-| Architecture | U-Net (`segmentation_models_pytorch`) |
-| Encoder | EfficientNet-B3, ImageNet pretrained |
-| Attention | scSE blocks in the decoder |
-| Parameters (edge-free) | about 13.2 million |
-| Loss | 0.4 BCE + 0.4 Dice + 0.2 Focal Tversky (alpha 0.7, beta 0.3, gamma 0.75) |
+| Notebook | Description |
+|----------|-------------|
+| `EAE_Net_edgefree_kvasir.ipynb` | U-Net with EfficientNet-B3 encoder and scSE attention (one output: the mask) |
+| `EAE_Net_kvasir.ipynb` | Same model with an extra output channel that predicts the object boundary (Canny edge of the mask), edge loss weight 0.3 |
+
+Common settings: about 13.2 million parameters, loss = 0.4 BCE + 0.4 Dice +
+0.2 Focal Tversky (alpha 0.7, beta 0.3, gamma 0.75).
 
 ## Dataset
 
@@ -34,29 +34,32 @@ Google Drive as `kvasir-seg.zip`.
 - Scheduler: cosine annealing with warm restarts (T_0 = 5, T_mult = 2)
 - Epochs: 25, batch size 8, mixed precision
 - Augmentation: flips, brightness/contrast, hue/saturation, elastic transform, CLAHE
-- Random seed: 42
+- Random seed: set `SEED` in the first lines of the training cell
 
 ## Results
 
-Edge-free model, Kvasir-SEG validation split, single run with seed 42:
+Kvasir-SEG validation split, mean ± std over 3 seeds (42, 43, 44), final epoch:
 
-| Dice | IoU | Precision | Recall | Accuracy |
-|------|-----|-----------|--------|----------|
-| 0.885 | 0.825 | 0.916 | 0.879 | 0.971 |
+| Model | Dice | IoU | Precision | Recall | Accuracy |
+|-------|------|-----|-----------|--------|----------|
+| EAE-Net (edge-free) | 0.888 ± 0.005 | 0.828 ± 0.005 | 0.918 ± 0.012 | 0.882 ± 0.017 | 0.973 ± 0.001 |
+| EAE-Net (with edge) | 0.890 ± 0.003 | 0.830 ± 0.004 | 0.928 ± 0.010 | 0.878 ± 0.009 | 0.972 ± 0.001 |
+
+The edge branch did not give a clear improvement on Kvasir-SEG in this setup.
+The validation split is used for evaluation; results can vary slightly between
+runs because of GPU non-determinism.
 
 ## How to run
 
 1. Open a notebook in Google Colab and select a GPU runtime (T4).
 2. Put `kvasir-seg.zip` in your Google Drive (`MyDrive/`).
 3. Run the cells from top to bottom. Training takes about 20 minutes.
-
-The notebook trains the model, saves the weights, prints the metrics and
-shows example predictions (original image, ground truth, prediction).
+4. To reproduce the table, set `SEED` to 42, 43 and 44 and run each time.
 
 ## Files
 
-- `eae_net_edgefree_kvasir.ipynb`: edge-free version (data, model, training, evaluation, visual results)
-- `eae_net_edge_kvasir.ipynb`: edge-aware version
+- `EAE_Net_edgefree_kvasir.ipynb`: edge-free model
+- `EAE_Net_kvasir.ipynb`: model with edge branch
 - `requirements.txt`: Python libraries
 
 ## Author
